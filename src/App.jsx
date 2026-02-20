@@ -280,12 +280,6 @@ const App = () => {
             <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-[1] text-white uppercase italic animate-slide-up">
               Vokalita, <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#F9E498] via-[#D4AF37] to-[#8C6B1F]">Standar Baru Voice Over Berbasis AI</span>
             </h2>
-            
-            {/* Design & Developed Credit Added Below Headline */}
-            <div className="text-[9px] md:text-[11px] text-[#D4AF37] font-black uppercase tracking-[0.4em] opacity-80 animate-fade-in -mt-2 md:-mt-4">
-              Design & Developed By : Gusti Dewa Anggading
-            </div>
-
             <p className="text-base md:text-xl text-slate-400 max-w-4xl mx-auto leading-relaxed font-light px-4 animate-fade-in delay-200">
               Vokalita adalah platform AI Voice Over yang menggunakan bank suara manusia untuk menghasilkan audio yang natural, profesional, dan terdengar seperti suara manusia asli untuk berbagai kebutuhan konten dan bisnis.
             </p>
