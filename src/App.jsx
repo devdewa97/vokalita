@@ -27,12 +27,20 @@ import {
   List,
   Target,
   ZapOff,
-  Headphones
+  Headphones,
+  InfoIcon,
+  Activity
 } from 'lucide-react';
+
+/**
+ * VOKALITA PRODUCTION READY VERSION
+ * Dirancang untuk deployment di Vercel/Netlify menggunakan Vite.
+ */
 
 // KONFIGURASI API
 const getApiKey = () => {
   try {
+    // Vite menggunakan import.meta.env untuk membaca variabel dari Vercel/Local .env
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (envKey && envKey !== "KODE_API_KEY_ANDA_DISINI" && envKey.trim() !== "") {
       return envKey.trim();
@@ -53,23 +61,26 @@ const App = () => {
   
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
-  const [selectedVoice, setSelectedVoice] = useState("Zephyr");
+  const [selectedVoice, setSelectedVoice] = useState("Charon");
   const [selectedStyle, setSelectedStyle] = useState("Bersemangat / Excited");
   
   const [volume, setVolume] = useState(80);
   const [pitch, setPitch] = useState(0); 
   const [speed, setSpeed] = useState(1.0); 
+  const [errorMessage, setErrorMessage] = useState("");
 
   const audioRef = useRef(null);
 
+  // DAFTAR SUARA DENGAN KARAKTER PROFESIONAL (Fokus Gender-Specific)
   const voices = [
-    { id: "Zephyr", name: "Laki-laki: Enerjik & Bersemangat" },
-    { id: "Charon", name: "Laki-laki: Hangat & Tenang" },
-    { id: "Enceladus", name: "Laki-laki: Formal & Berwibawa" },
-    { id: "Leda", name: "Perempuan: Ramah & Lembut" },
-    { id: "Aoede", name: "Perempuan: Ceria & Terang" },
-    { id: "Callirrhoe", name: "Perempuan: Elegant & Informatif" },
-    { id: "Despina", name: "Perempuan: Pembaca Berita (Formal)" },
+    { id: "Charon", name: "Laki-laki: Deep & Professional" },
+    { id: "Enceladus", name: "Laki-laki: Berat & Berwibawa" },
+    { id: "Fenrir", name: "Laki-laki: Tegas & Maskulin" },
+    { id: "Puck", name: "Laki-laki: Enerjik (Anak Muda)" },
+    { id: "Leda", name: "Perempuan: Ramah & Profesional" },
+    { id: "Kore", name: "Perempuan: Ceria & Terang" },
+    { id: "Aoede", name: "Perempuan: Lembut & Elegant" },
+    { id: "Despina", name: "Perempuan: Formal & Jelas" },
   ];
 
   const styles = [
@@ -108,12 +119,13 @@ const App = () => {
   const generateScript = async () => {
     if (!productDesc || !usp) return;
     if (!apiKey) {
-      setGeneratedScript("Gagal: Konfigurasi API belum lengkap di server.");
+      setGeneratedScript("Gagal: Konfigurasi sistem belum siap. Pastikan API Key sudah terpasang.");
       return;
     }
 
     setIsGeneratingScript(true);
     setGeneratedScript("");
+    setErrorMessage("");
     
     try {
       const modelName = "gemini-2.5-flash";
@@ -132,14 +144,15 @@ const App = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error?.message || `Error ${response.status}`);
+        if (response.status === 429) throw new Error("Sistem sedang mengoptimalkan sumber daya. Silakan tunggu 1 menit.");
+        throw new Error("Layanan sedang padat. Silakan coba kembali.");
       }
 
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Gagal mendapatkan naskah.";
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Hasil tidak ditemukan.";
       setGeneratedScript(text.replace(/\*\*/g, '').replace(/###/g, '').replace(/\*/g, '').trim()); 
     } catch (error) {
-      setGeneratedScript(`Sistem sedang sibuk, silakan coba beberapa saat lagi.`);
-      console.error(error);
+      setErrorMessage(error.message);
+      setGeneratedScript(`Update Status: ${error.message}`);
     } finally {
       setIsGeneratingScript(false);
     }
@@ -170,11 +183,14 @@ const App = () => {
   };
 
   const generateAudio = async () => {
-    if (!generatedScript || !apiKey || generatedScript.includes("sibuk")) return;
+    if (!generatedScript || !apiKey || generatedScript.includes("Status")) return;
     setIsGeneratingAudio(true);
     setAudioUrl(null);
+    setErrorMessage("");
+
     try {
-      const promptText = `Ucapkan naskah ini dengan gaya ${selectedStyle}: ${generatedScript}`;
+      const voiceInstruction = `Gunakan suara ${selectedVoice} (Pastikan output suara sesuai gender model ini). Gaya: ${selectedStyle}. Kecepatan: ${speed}x. Volume: ${volume}%.`;
+      const promptText = `Ucapkan naskah ini dengan profil instruksi [${voiceInstruction}]: ${generatedScript}`;
       
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
         method: 'POST',
@@ -191,6 +207,12 @@ const App = () => {
       });
 
       const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) throw new Error("Batas pemrosesan sesi tercapai. Sistem memerlukan jeda singkat untuk menjaga kualitas.");
+        throw new Error("Gagal melakukan render vokal. Periksa koneksi Anda.");
+      }
+
       const audioDataBase64 = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       const mimeType = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType || "audio/L16;rate=24000";
       const sampleRate = parseInt(mimeType.split('rate=')[1]) || 24000;
@@ -205,7 +227,7 @@ const App = () => {
         setAudioUrl(URL.createObjectURL(wavBlob));
       }
     } catch (error) {
-      console.error("Audio Error:", error);
+      setErrorMessage(error.message);
     } finally {
       setIsGeneratingAudio(false);
     }
@@ -215,7 +237,7 @@ const App = () => {
     if (!audioUrl) return;
     const link = document.createElement('a');
     link.href = audioUrl;
-    link.download = `vokalita-${Date.now()}.wav`;
+    link.download = `vokalita-render-${Date.now()}.wav`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -271,7 +293,21 @@ const App = () => {
 
       {/* Main App Section */}
       <section id="generator" className="max-w-7xl mx-auto px-6 pb-20 z-10 relative">
-        <div className="grid lg:grid-cols-12 gap-12 items-start mt-12">
+        
+        {/* Info Box */}
+        <div className="mb-12 max-w-4xl mx-auto bg-[#D4AF37]/5 border border-[#D4AF37]/10 p-5 rounded-[5px] flex items-center gap-4 group hover:border-[#D4AF37]/30 transition-all shadow-2xl">
+           <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-[5px] flex items-center justify-center shrink-0">
+              <Activity className="w-5 h-5 text-[#D4AF37]" />
+           </div>
+           <div className="flex-1 text-left">
+             <h6 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Resource Optimization Mode</h6>
+             <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+               Vokalita menggunakan pemrosesan High-Fidelity. Untuk performa terbaik, sistem menerapkan antrian otomatis saat trafik padat. Hubungi <span className="text-white border-b border-white/20">Enterprise Support</span> untuk akses tanpa batas.
+             </p>
+           </div>
+        </div>
+
+        <div className="grid lg:grid-cols-12 gap-12 items-start">
           
           {/* Panel Kiri: Input */}
           <div className="lg:col-span-5 space-y-8">
@@ -286,7 +322,7 @@ const App = () => {
                    <textarea 
                     value={productDesc}
                     onChange={(e) => setProductDesc(e.target.value)}
-                    placeholder="Contoh: Kampus STIE ARLINDO, tempat kuliah karyawan terbaik dengan jadwal fleksibel..."
+                    placeholder="Tuliskan produk Anda..."
                     className="w-full h-32 bg-[#05070A] border border-slate-800 rounded-[5px] p-6 text-sm text-slate-300 focus:border-[#D4AF37]/50 outline-none transition-all resize-none"
                    />
                 </div>
@@ -298,7 +334,7 @@ const App = () => {
                    <textarea 
                     value={usp}
                     onChange={(e) => setUsp(e.target.value)}
-                    placeholder="Contoh: Biaya terjangkau, akreditasi A, lokasi strategis di pusat kota..."
+                    placeholder="Apa yang membedakan produk Anda?"
                     className="w-full h-24 bg-[#05070A] border border-slate-800 rounded-[5px] p-6 text-sm text-slate-300 focus:border-[#D4AF37]/50 outline-none transition-all resize-none"
                    />
                  </div>
@@ -311,7 +347,7 @@ const App = () => {
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D4AF37] via-[#F9E498] to-[#D4AF37] animate-shimmer bg-[length:200%_100%] transition-opacity group-disabled:opacity-20"></div>
                 <div className="relative h-full flex items-center justify-center gap-3 text-[#05070A] font-black text-[12px] uppercase tracking-[0.3em] transition-transform active:scale-95">
-                  {isGeneratingScript ? <Loader2 className="animate-spin" /> : <><Sparkles className="w-4 h-4 fill-current" /> Generate Script AI</>}
+                  {isGeneratingScript ? <Loader2 className="animate-spin" /> : <><Sparkles className="w-4 h-4 fill-current" /> Process AI Script</>}
                 </div>
               </button>
             </div>
@@ -331,20 +367,20 @@ const App = () => {
                 <textarea 
                   value={generatedScript}
                   onChange={(e) => setGeneratedScript(e.target.value)}
-                  placeholder="Hasil naskah AI akan muncul di sini..."
+                  placeholder="Hasil analisis AI akan tampil di sini..."
                   className={`w-full h-52 bg-[#05070A] border border-slate-800 rounded-[5px] p-8 text-sm font-mono leading-relaxed resize-none transition-all text-white`}
                 />
               </div>
 
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-2 text-left">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pilih Suara</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Karakter Vokal</label>
                   <select value={selectedVoice} onChange={(e) => setSelectedVoice(e.target.value)} className="w-full bg-[#05070A] border border-slate-800 p-5 text-xs font-bold text-white outline-none rounded-[5px] appearance-none cursor-pointer">
                     {voices.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2 text-left">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pilih Gaya</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Gaya Penyampaian</label>
                   <select value={selectedStyle} onChange={(e) => setSelectedStyle(e.target.value)} className="w-full bg-[#05070A] border border-slate-800 p-5 text-xs font-bold text-white outline-none rounded-[5px] appearance-none cursor-pointer">
                     {styles.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -353,32 +389,41 @@ const App = () => {
 
               <div className="grid md:grid-cols-3 gap-10 bg-[#05070A] p-8 border border-slate-800 rounded-[5px]">
                 <div className="space-y-4 text-left">
-                  <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Volume</span><span className="text-[#D4AF37] font-mono">{volume}%</span></div>
+                  <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Gain Control</span><span className="text-[#D4AF37] font-mono">{volume}%</span></div>
                   <input type="range" min="0" max="100" value={volume} onChange={(e)=>setVolume(e.target.value)} className="w-full h-1 bg-slate-800 accent-[#D4AF37] cursor-pointer" />
                 </div>
                 <div className="space-y-4 text-left">
-                  <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Nada</span><span className="text-[#D4AF37] font-mono">{pitch}</span></div>
+                  <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Frequency</span><span className="text-[#D4AF37] font-mono">{pitch}</span></div>
                   <input type="range" min="-20" max="20" value={pitch} onChange={(e)=>setPitch(e.target.value)} className="w-full h-1 bg-slate-800 accent-[#D4AF37] cursor-pointer" />
                 </div>
                 <div className="space-y-4 text-left">
-                  <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Kecepatan</span><span className="text-[#D4AF37] font-mono">{speed}x</span></div>
+                  <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Timing</span><span className="text-[#D4AF37] font-mono">{speed}x</span></div>
                   <input type="range" min="0.5" max="2.0" step="0.1" value={speed} onChange={(e)=>setSpeed(e.target.value)} className="w-full h-1 bg-slate-800 accent-[#D4AF37] cursor-pointer" />
                 </div>
               </div>
 
               <button 
                 onClick={generateAudio} 
-                disabled={!generatedScript || isGeneratingAudio || generatedScript.includes("sibuk")} 
+                disabled={!generatedScript || isGeneratingAudio || generatedScript.includes("Status")} 
                 className="w-full py-5 bg-white text-[#05070A] font-black text-[12px] uppercase tracking-[0.4em] rounded-[5px] flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-2xl h-16"
               >
-                {isGeneratingAudio ? <Loader2 className="animate-spin" /> : <><Play className="w-4 h-4 fill-current" /> Render Voice Over</>}
+                {isGeneratingAudio ? <Loader2 className="animate-spin" /> : <><Activity className="w-4 h-4 fill-current" /> Initialize Audio Render</>}
               </button>
+
+              {errorMessage && (
+                <div className="p-5 bg-indigo-500/5 border border-indigo-500/20 rounded-[5px] flex items-center gap-4 text-indigo-300 text-[10px] font-bold uppercase tracking-[0.2em] shadow-xl text-left">
+                   <div className="w-8 h-8 bg-indigo-500/10 rounded-[5px] flex items-center justify-center shrink-0">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                   </div>
+                   {errorMessage}
+                </div>
+              )}
 
               {audioUrl && (
                 <div className="flex flex-col md:flex-row items-center gap-6 p-8 bg-[#05070A] border border-[#D4AF37]/20 rounded-[5px] animate-in slide-in-from-bottom-2 shadow-inner">
                   <audio ref={audioRef} src={audioUrl} controls className="w-full md:flex-1 h-8 invert brightness-110 contrast-125 opacity-70" />
-                  <button onClick={downloadAudio} className="px-12 py-4 border border-[#D4AF37] text-[#D4AF37] font-black text-[10px] uppercase tracking-[0.2em] rounded-[5px] hover:bg-[#D4AF37] hover:text-black transition-all">
-                     Download WAV
+                  <button onClick={downloadAudio} className="px-12 py-4 border border-[#D4AF37] text-[#D4AF37] font-black text-[10px] uppercase tracking-[0.2em] rounded-[5px] hover:bg-[#D4AF37] hover:text-black transition-all shadow-lg">
+                     Mastering & Download
                   </button>
                 </div>
               )}
@@ -392,7 +437,7 @@ const App = () => {
         <div className="max-w-7xl mx-auto space-y-20">
           <div className="text-center space-y-4">
             <h3 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.5em]">The Advantage</h3>
-            <h2 className="text-4xl md:text-5xl font-black text-white uppercase italic italic">Mengapa Vokalita?</h2>
+            <h2 className="text-4xl md:text-5xl font-black text-white uppercase italic">Mengapa Vokalita?</h2>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -411,31 +456,11 @@ const App = () => {
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="py-32 px-6 z-10 relative overflow-hidden">
-         <div className="absolute inset-0 bg-[#D4AF37]/5 opacity-50 blur-[100px]"></div>
-         <div className="max-w-4xl mx-auto text-center space-y-10 relative">
-            <h2 className="text-4xl md:text-6xl font-black text-white uppercase leading-tight italic">
-              Siap Membuat Iklan Yang <span className="text-[#D4AF37]">Mengesankan?</span>
-            </h2>
-            <p className="text-slate-400 text-lg font-light max-w-2xl mx-auto">
-              Berhenti menggunakan suara robot yang kaku. Mulailah menggunakan Vokalita untuk hasil yang lebih personal dan profesional.
-            </p>
-            <button 
-              onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
-              className="inline-flex items-center gap-4 px-10 py-5 bg-[#D4AF37] text-black font-black text-[12px] uppercase tracking-[0.3em] rounded-[5px] hover:scale-105 transition-all shadow-[0_0_50px_rgba(212,175,55,0.2)]"
-            >
-              Coba Sekarang <ArrowRight className="w-4 h-4" />
-            </button>
-         </div>
-      </section>
-
-      {/* Footer Minimalist & Professional */}
+      {/* Footer Minimalist */}
       <footer className="border-t border-[#D4AF37]/10 py-20 bg-[#030508] relative z-10">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex flex-col items-center gap-12">
               
-              {/* Branding */}
               <div className="flex flex-col items-center gap-4 group">
                 <div className="relative">
                   <div className="absolute -inset-1.5 bg-[#D4AF37] rounded-[5px] blur opacity-10 group-hover:opacity-30 transition"></div>
@@ -449,12 +474,11 @@ const App = () => {
                 </div>
               </div>
 
-              {/* Minimal Copyright Bar */}
               <div className="w-full pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                 <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
                   © 2026 Vokalita Sound Lab. All Rights Reserved.
                 </p>
-                <div className="flex items-center gap-2 text-[9px] text-slate-700 font-bold uppercase tracking-widest italic">
+                <div className="flex items-center gap-2 text-[9px] text-slate-700 font-bold uppercase tracking-widest italic text-center md:text-right">
                   Designed & Developed by <span className="text-[#D4AF37] non-italic font-black">Gusti Dewa Anggading</span>
                 </div>
               </div>
