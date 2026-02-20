@@ -37,7 +37,7 @@ import {
 // KONFIGURASI API
 const getApiKey = () => {
   try {
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const envKey = import.meta.env?.VITE_GEMINI_API_KEY;
     if (envKey && envKey !== "KODE_API_KEY_ANDA_DISINI" && envKey.trim() !== "") {
       return envKey.trim();
     }
@@ -249,11 +249,13 @@ const App = () => {
   return (
     <div className="min-h-screen bg-[#05070A] text-slate-200 font-sans selection:bg-[#D4AF37]/30 overflow-x-hidden relative flex flex-col">
       
-      {/* Background Orbs */}
+      {/* Optimized Background Orbs - Hidden on low-end mobile devices, visible on Desktop */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-5%] w-[45vw] h-[45vw] bg-indigo-900/10 blur-[120px] rounded-full"></div>
-        <div className="absolute top-[20%] right-[-10%] w-[35vw] h-[35vw] bg-[#D4AF37]/5 blur-[150px] rounded-full"></div>
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#D4AF37 1px, transparent 1px), linear-gradient(90deg, #D4AF37 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
+        <div className="hidden md:block absolute top-[-10%] left-[-5%] w-[45vw] h-[45vw] bg-indigo-900/10 blur-[120px] rounded-full"></div>
+        <div className="hidden md:block absolute top-[20%] right-[-10%] w-[35vw] h-[35vw] bg-[#D4AF37]/5 blur-[150px] rounded-full"></div>
+        {/* Simpler gradient for mobile to prevent blank screen crash */}
+        <div className="md:hidden absolute inset-0 bg-gradient-to-b from-[#0A0D14] to-[#05070A]"></div>
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(#D4AF37 1px, transparent 1px), linear-gradient(90deg, #D4AF37 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
       </div>
 
       <nav className="border-b border-[#D4AF37]/10 bg-[#05070A]/90 backdrop-blur-xl sticky top-0 z-50">
@@ -288,7 +290,7 @@ const App = () => {
       {/* Main App */}
       <section id="generator" className="max-w-7xl mx-auto px-4 md:px-6 pb-20 z-10 relative w-full">
         
-        {/* Resource Optimization Banner Updated */}
+        {/* Resource Optimization Banner */}
         {showResourceInfo && (
           <div className="mb-12 max-w-4xl mx-auto bg-[#D4AF37]/5 border border-[#D4AF37]/10 p-5 rounded-lg flex items-center gap-4 group hover:border-[#D4AF37]/30 transition-all shadow-2xl relative animate-in fade-in slide-in-from-top-4 duration-500">
              <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-md flex items-center justify-center shrink-0">
@@ -364,7 +366,7 @@ const App = () => {
               <button 
                 onClick={generateScript} 
                 disabled={!productDesc || !usp || isGeneratingScript || cooldown > 0} 
-                className="w-full relative h-14 md:h-16 rounded-md overflow-hidden group shadow-lg disabled:opacity-30"
+                className="w-full relative h-14 md:h-16 rounded-md overflow-hidden group shadow-lg disabled:opacity-30 active:scale-95 transition-transform"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D4AF37] via-[#F9E498] to-[#D4AF37] animate-shimmer bg-[length:200%_100%]"></div>
                 <div className="relative h-full flex items-center justify-center gap-3 text-[#05070A] font-black text-[11px] md:text-[12px] uppercase tracking-[0.3em]">
@@ -504,7 +506,7 @@ const App = () => {
         input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 2px; background: #D4AF37; cursor: pointer; border: 2px solid #05070A; margin-top: -6px; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; background: #1e293b; }
-        html, body { overscroll-behavior-y: contain; }
+        html, body { overscroll-behavior-y: contain; background-color: #05070A; }
       `}} />
     </div>
   );
