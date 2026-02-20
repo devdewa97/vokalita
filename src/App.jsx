@@ -269,19 +269,25 @@ const App = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section Updated */}
       <section className="relative pt-12 md:pt-24 pb-8 md:pb-12 px-4 md:px-6 z-10 text-center">
-        <div className="max-w-4xl mx-auto space-y-6 md:space-y-10">
+        <div className="max-w-5xl mx-auto space-y-6 md:space-y-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/5 border border-[#D4AF37]/20 text-[9px] md:text-[10px] font-black text-[#D4AF37] uppercase tracking-widest shadow-2xl animate-fade-in">
             <Sparkles className="w-3 h-3 md:w-4 md:h-4" />
             Artificial Intelligence Sound Technology
           </div>
-          <div className="space-y-4 md:space-y-6">
+          <div className="space-y-4 md:space-y-8">
             <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-[1] text-white uppercase italic animate-slide-up">
-              Voice Over AI yang <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#F9E498] via-[#D4AF37] to-[#8C6B1F]">Terasa Manusiawi.</span>
+              Vokalita, <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#F9E498] via-[#D4AF37] to-[#8C6B1F]">Standar Baru Voice Over Berbasis AI</span>
             </h2>
-            <p className="text-base md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-light px-4 animate-fade-in delay-200">
-              Ubah konsep campaign menjadi suara profesional dalam detik. Naskah cerdas & vokal AI tercanggih.
+            
+            {/* Design & Developed Credit Added Below Headline */}
+            <div className="text-[9px] md:text-[11px] text-[#D4AF37] font-black uppercase tracking-[0.4em] opacity-80 animate-fade-in -mt-2 md:-mt-4">
+              Design & Developed By : Gusti Dewa Anggading
+            </div>
+
+            <p className="text-base md:text-xl text-slate-400 max-w-4xl mx-auto leading-relaxed font-light px-4 animate-fade-in delay-200">
+              Vokalita adalah platform AI Voice Over yang menggunakan bank suara manusia untuk menghasilkan audio yang natural, profesional, dan terdengar seperti suara manusia asli untuk berbagai kebutuhan konten dan bisnis.
             </p>
           </div>
         </div>
